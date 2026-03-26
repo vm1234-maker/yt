@@ -1,0 +1,15 @@
+# Install with Python 3.11+ (matches Docker). System Python 3.9 cannot resolve crewai==0.80.x.
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+crewai==0.80.0
+celery==5.4.0
+redis==5.0.8
+supabase==2.10.0
+pydantic-settings==2.5.2
+httpx==0.27.2
+python-dotenv==1.0.1
+google-api-python-client==2.149.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.1
+openai>=1.70.0
+macpymessenger>=0.1.0

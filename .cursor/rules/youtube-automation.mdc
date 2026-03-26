@@ -1,0 +1,297 @@
+---
+description: YouTube ambient/soundscape automation — architecture, agents, stack, and conventions (NemoClaw + Next.js + CrewAI)
+alwaysApply: true
+---
+
+# YouTube Automation — Ambient/Soundscape Channel
+# Full-stack AI agent system managed by NemoClaw
+
+---
+
+## Project Overview
+
+We are building an AI-powered YouTube automation system that runs an ambient/soundscape channel
+(rain sounds, lo-fi, fireplace, dark forest, coffee shop ambiance, nature audio, etc.).
+The goal is side income of $500–$2k/month through YouTube AdSense, channel memberships, and affiliate links.
+The system is designed to operate autonomously with minimal human intervention.
+
+The stack has two layers:
+
+1. **The factory** — a Next.js 14 (App Router) dashboard + CrewAI Python backend running 6 specialized agents
+2. **The manager** — a NemoClaw OpenClaw agent that sits above everything, monitors the system,
+   makes high-level decisions, and communicates updates via Telegram
+
+---
+
+## Architecture
+
+```
+NemoClaw (OpenClaw agent — always-on autonomous manager)
+  - Reads analytics reports and agent outputs
+  - Makes high-level strategic decisions
+  - Sends Telegram updates / asks for human approval
+  - Can update agent instructions and priorities
+  - Runs in an isolated OpenShell sandbox (network + filesystem policy enforced)
+        ↓  manages & instructs via API
+Next.js Dashboard (control plane UI)
+        ↓
+CrewAI Python Backend (agent execution layer)
+  ├── Strategy Agent      — reads all reports, sets content priorities, runs the ROI loop
+  ├── Research Agent      — YouTube trends, RPM by niche, competition density, keyword data
+  ├── Content Agent       — titles, thumbnails, descriptions, tags
+  ├── Production Agent    — audio loop generation, visual assembly, FFmpeg rendering
+  ├── Upload Agent        — YouTube Data API v3, scheduling, metadata posting
+  └── Analytics Agent     — watch time, RPM, CTR, subscriber conversion — reports back
+        ↓
+External Tools & APIs
+  - YouTube Data API v3
+  - SerpAPI (trend research)
+  - Suno API (original audio generation)
+  - ElevenLabs (voice if needed)
+  - DALL·E / Replicate (thumbnail visuals)
+  - FFmpeg (video rendering)
+  - Redis (shared agent memory + run history)
+  - Supabase (persistent storage — analytics, content history, agent logs)
+```
+
+---
+
+## Tech Stack
+
+### Frontend
+- **Framework**: Next.js 14 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn/ui
+- **State**: Zustand
+- **Data fetching**: TanStack Query (React Query)
+- **Charts**: Recharts (for analytics dashboard)
+- **Real-time**: Supabase Realtime (agent activity feed)
+
+### Backend (Python)
+- **Agent framework**: CrewAI
+- **Language**: Python 3.11+
+- **API layer**: FastAPI (Next.js talks to this)
+- **Task queue**: Celery + Redis
+- **Memory**: Redis (short-term), Supabase (long-term)
+- **Video rendering**: FFmpeg via subprocess
+- **Environment**: `.env` for all secrets, `pydantic-settings` for config
+
+### NemoClaw Layer
+- **Runtime**: OpenShell sandbox (via `nemoclaw onboard`)
+- **Agent**: OpenClaw agent with custom instructions and tools
+- **Inference**: NVIDIA Nemotron 3 Super 120B via build.nvidia.com (can switch at runtime)
+- **Communication**: Telegram bridge (native NemoClaw deployment option)
+- **Policy**: Custom `openclaw-sandbox.yaml` — allowlisted endpoints only
+- **Tools given to OpenClaw agent**:
+  - Read analytics reports from Supabase
+  - Call Next.js API routes to trigger agent runs
+  - Read/write agent priority instructions
+  - Send Telegram messages to the human operator
+
+### Infrastructure
+- **Hosting**: Vercel (Next.js) + Railway or Render (FastAPI + Celery)
+- **Database**: Supabase (Postgres + Realtime + Storage)
+- **Cache/Queue**: Redis (Upstash)
+- **GPU (if needed)**: NVIDIA GPU instance via NemoClaw remote deployment
+
+---
+
+## Agent Definitions (CrewAI)
+
+### Strategy Agent
+- **Role**: Content strategist and ROI optimizer
+- **Goal**: Decide what content to make next based on performance data
+- **Decision logic**:
+  - Exploit: double down on high watch-time + high RPM combinations
+  - Test: allocate 20–30% of uploads to Research Agent's new niche recommendations
+  - Kill: flag niches with 3–5 uploads and consistently low retention
+- **Inputs**: Analytics report JSON, Research report JSON, upload history
+- **Outputs**: Prioritized content plan with specific niche angles, upload counts, reasoning
+- **Memory**: Full run history in Supabase
+
+### Research Agent
+- **Role**: YouTube trend analyst
+- **Goal**: Find niches with high RPM, growing search volume, and low competition
+- **Tools**: YouTube Data API, SerpAPI, web search
+- **Target niches**: rain sounds, lo-fi study music, dark forest ambiance, coffee shop sounds,
+  fireplace crackle, thunderstorm, binaural beats, sleep sounds for anxiety, nature ASMR
+- **Outputs**: Ranked niche report with RPM estimates, competition score, trend direction
+
+### Content Agent
+- **Role**: Content creator
+- **Goal**: Generate compelling titles, thumbnails, descriptions, and tags
+- **Tools**: Claude API (via Anthropic), DALL·E or Replicate for thumbnails
+- **Title patterns to test**: "Study with me", "Rain sounds for sleep", "X hours of Y",
+  "Cozy [setting] ambiance", "Dark [setting] for focus"
+- **Outputs**: Content brief per video (title, thumbnail prompt, description, tags, chapters)
+
+### Production Agent
+- **Role**: Video producer
+- **Goal**: Assemble the final video file ready for upload
+- **Tools**: Suno API (audio), FFmpeg (video assembly), Replicate (visuals)
+- **Workflow**:
+  1. Generate or source audio loop (rain, lo-fi, etc.)
+  2. Generate or source looping visual (animated rain, cozy room, forest, etc.)
+  3. Render final video with FFmpeg (target: 1–8 hours depending on content type)
+  4. Output: MP4 file in /sandbox/output/
+- **Note**: All file writes go to /sandbox — NemoClaw filesystem policy enforced
+
+### Upload Agent
+- **Role**: YouTube publisher
+- **Goal**: Upload videos on schedule with correct metadata
+- **Tools**: YouTube Data API v3
+- **Responsibilities**: Upload MP4, set title/description/tags/thumbnail, schedule publish time,
+  set category (Music or Education), enable monetization
+- **Schedule**: Determined by Strategy Agent — typically 3–5 uploads per week to start
+
+### Analytics Agent
+- **Role**: Performance analyst
+- **Goal**: Monitor channel performance and report back to Strategy Agent
+- **Tools**: YouTube Analytics API, Supabase read/write
+- **Metrics tracked**: Views, watch time (hours), RPM, CTR, impressions,
+  subscriber conversion rate, revenue per video
+- **Report format**: JSON summary per video + channel-level weekly rollup
+- **Cadence**: Runs every 24 hours, writes report to Supabase
+
+---
+
+## Key Business Rules (baked into Strategy Agent prompt)
+
+- RPM target: $8–$12 for sleep/ambient niche, $10–$15 for study/focus niche
+- Watch time is the primary optimization signal (drives recommendations)
+- Video length targets: 1hr minimum, 3hr standard, 8hr for sleep content
+- A niche is "proven" after 3 uploads averaging >40% retention at 30 minutes
+- A niche is "dead" after 5 uploads averaging <20% retention at 10 minutes
+- Never reuse audio loops — always generate or source unique content
+- Copyright safety: Suno-generated audio only (original), no stock music libraries
+
+---
+
+## NemoClaw Agent Instructions (OpenClaw system prompt context)
+
+The NemoClaw agent should know:
+- It is managing a YouTube ambient channel automation system
+- It has read access to Supabase analytics tables and agent logs
+- It can trigger new agent runs via POST to the Next.js API
+- It communicates with the human operator via Telegram
+- It should send a daily summary every morning: top performing video, revenue estimate, what's being produced today
+- It should ask for human approval before: changing the content strategy direction, spending on new API services, uploading more than 7 videos in a week
+- It runs inside an OpenShell sandbox — all outbound calls are policy-controlled
+
+---
+
+## Folder Structure
+
+```
+/
+├── app/                        # Next.js App Router
+│   ├── dashboard/              # Main dashboard page
+│   ├── agents/                 # Agent status + logs UI
+│   ├── content/                # Content queue + approval
+│   ├── analytics/              # Channel performance charts
+│   └── api/                   # API routes (trigger agents, read data)
+├── components/                 # Reusable UI components (shadcn + custom)
+├── lib/                        # Supabase client, utils, types
+├── hooks/                      # Custom React hooks
+├── store/                      # Zustand state
+│
+├── backend/                    # Python FastAPI + CrewAI
+│   ├── agents/                 # One file per agent
+│   │   ├── strategy.py
+│   │   ├── research.py
+│   │   ├── content.py
+│   │   ├── production.py
+│   │   ├── upload.py
+│   │   └── analytics.py
+│   ├── tools/                  # Tool definitions (YouTube API, Suno, FFmpeg, etc.)
+│   ├── crew.py                 # CrewAI crew definition + orchestration
+│   ├── tasks.py                # Celery task definitions
+│   ├── main.py                 # FastAPI app entry point
+│   └── config.py               # Pydantic settings
+│
+├── nemoclaw/                   # NemoClaw configuration
+│   ├── openclaw-sandbox.yaml   # Network + filesystem policy
+│   ├── agent-instructions.md   # OpenClaw agent system prompt
+│   └── tools/                  # Custom tools for the OpenClaw agent
+│
+├── supabase/
+│   ├── migrations/             # DB schema migrations
+│   └── functions/              # Supabase Edge Functions (if needed)
+│
+├── .env.local                  # All secrets (never commit)
+├── .cursor/rules/youtube-automation.mdc   # Cursor project rules (this file)
+└── README.md
+```
+
+---
+
+## Environment Variables Required
+
+```
+# Anthropic
+ANTHROPIC_API_KEY=
+
+# NVIDIA / NemoClaw
+NVIDIA_API_KEY=                 # from build.nvidia.com
+
+# YouTube
+YOUTUBE_CLIENT_ID=
+YOUTUBE_CLIENT_SECRET=
+YOUTUBE_REFRESH_TOKEN=
+
+# Suno
+SUNO_API_KEY=
+
+# ElevenLabs
+ELEVENLABS_API_KEY=
+
+# DALL·E / OpenAI
+OPENAI_API_KEY=
+
+# Replicate
+REPLICATE_API_TOKEN=
+
+# SerpAPI
+SERPAPI_KEY=
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Redis (Upstash)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
+# Telegram (for NemoClaw bridge)
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+```
+
+---
+
+## Coding Conventions
+
+- TypeScript strict mode always on
+- All API routes use Zod for input validation
+- All agent outputs are typed with Pydantic models
+- Never hardcode secrets — always use environment variables
+- All async operations use proper error handling (try/catch + typed errors)
+- Supabase calls always use the service role key on the server, anon key on the client
+- FFmpeg subprocess calls always run inside a try/except with timeout
+- Agent logs are always written to Supabase `agent_runs` table with timestamp, agent name, status, output summary
+
+---
+
+## Current Build Phase
+
+Phase 1 (now): Scaffold Next.js + FastAPI + CrewAI skeleton, connect Supabase, define agent interfaces
+Phase 2: Implement Research Agent + Content Agent fully
+Phase 3: Implement Production Agent (Suno + FFmpeg pipeline)
+Phase 4: Implement Upload Agent + Analytics Agent
+Phase 5: Strategy Agent ROI loop
+Phase 6: NemoClaw integration + Telegram bridge
+Phase 7: Dashboard UI polish + monitoring
+
+We are currently in Phase 1.

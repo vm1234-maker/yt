@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "skills": {
+    "analytics-expert": {
+      "source": "shipshitdev/library",
+      "sourceType": "github",
+      "computedHash": "37f973dce4c87d60d850599c157b3148a6113cfa39f1b43a6cbf4ae7d00ae912"
+    },
+    "ffmpeg": {
+      "source": "digitalsamba/claude-code-video-toolkit",
+      "sourceType": "github",
+      "computedHash": "51fa05bc18bb2691e622aefd1d8ec6d4d96a9e9c44cdf599003c9d6003d11a07"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "computedHash": "d31e234f0c90694a670222cdd1dafa853e051d7066beda389f1097c22dadd461"
+    },
+    "seo-content-writer": {
+      "source": "aaron-he-zhu/seo-geo-claude-skills",
+      "sourceType": "github",
+      "computedHash": "17f4009a7b7c4831f02cd59d6ad48283cf63f0008632b90b4f7b44ecddb54f6c"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "computedHash": "9c87c315aed143ee3b34bec8117100f5035e0df09e6b23e1ecc772cff434c9ad"
+    },
+    "video-processing-editing": {
+      "source": "erichowens/some_claude_skills",
+      "sourceType": "github",
+      "computedHash": "01706a193e89982cd9f1d2fbae982ba7bec51f3e5b6d93e2318e7b32ce414491"
+    },
+    "youtube-research-video-topic": {
+      "source": "manojbajaj95/claude-gtm-plugin",
+      "sourceType": "github",
+      "computedHash": "3bc47674ee76f7e113a3c8d2b6f67f96ed9503b275513822e843cd7881e17e72"
+    }
+  }
+}
