@@ -37,6 +37,24 @@ export function ActivityFeed({ initial }: ActivityFeedProps) {
   useEffect(() => {
     const sb = getSupabaseBrowser()
     if (!sb) return
+    let cancelled = false
+    void (async () => {
+      const { data } = await sb
+        .from('agent_runs')
+        .select('*')
+        .order('started_at', { ascending: false })
+        .limit(30)
+      if (cancelled || !data) return
+      setFeed(data as AgentRun[])
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const sb = getSupabaseBrowser()
+    if (!sb) return
     const channel = sb
       .channel('activity_feed')
       .on(

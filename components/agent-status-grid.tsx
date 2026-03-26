@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { getSupabaseBrowser } from '@/lib/supabase'
+import { latestRunPerAgent } from '@/lib/agent-runs'
 import type { AgentRun } from '@/lib/types'
 import { Cpu, Clock } from 'lucide-react'
 
@@ -29,16 +30,27 @@ function relativeTime(isoString: string): string {
 }
 
 export function AgentStatusGrid({ initialRuns }: Props) {
-  const [runMap, setRunMap] = useState<Record<string, AgentRun>>(() => {
-    const map: Record<string, AgentRun> = {}
-    for (const run of initialRuns) {
-      const existing = map[run.agent_name]
-      if (!existing || run.started_at > existing.started_at) {
-        map[run.agent_name] = run
-      }
+  const [runMap, setRunMap] = useState<Record<string, AgentRun>>(() =>
+    latestRunPerAgent(initialRuns)
+  )
+
+  useEffect(() => {
+    const sb = getSupabaseBrowser()
+    if (!sb) return
+    let cancelled = false
+    void (async () => {
+      const { data } = await sb
+        .from('agent_runs')
+        .select('*')
+        .order('started_at', { ascending: false })
+        .limit(200)
+      if (cancelled || !data) return
+      setRunMap(latestRunPerAgent(data as AgentRun[]))
+    })()
+    return () => {
+      cancelled = true
     }
-    return map
-  })
+  }, [])
 
   useEffect(() => {
     const sb = getSupabaseBrowser()

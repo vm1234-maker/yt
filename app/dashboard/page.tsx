@@ -14,6 +14,8 @@ import { ActivityFeed } from '@/components/activity-feed'
 import { AgentStatusGrid } from '@/components/agent-status-grid'
 import { RunPipelineButton } from '@/components/run-pipeline-button'
 
+export const dynamic = 'force-dynamic'
+
 function AccentBar({ accent }: { accent: string }) {
   const colors: Record<string, string> = {
     amber: 'var(--amber)',
