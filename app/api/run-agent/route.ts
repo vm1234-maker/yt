@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getBackendOrigin } from '@/lib/backend-url'
+import { parseBackendProxyBody } from '@/lib/backend-proxy-body'
 
 const schema = z.object({
   agent: z.enum([
@@ -36,20 +37,9 @@ export async function POST(request: Request) {
       body: JSON.stringify(parsed.data),
     })
     const text = await res.text()
-    let data: unknown = {}
-    try {
-      data = text ? JSON.parse(text) : {}
-    } catch {
-      return NextResponse.json(
-        {
-          error: 'Backend returned non-JSON',
-          backendStatus: res.status,
-          snippet: text.slice(0, 400),
-        },
-        { status: 502 }
-      )
-    }
-    return NextResponse.json(data, { status: res.status })
+    const parsedBody = parseBackendProxyBody(res, text)
+    if (!parsedBody.ok) return parsedBody.response
+    return NextResponse.json(parsedBody.data, { status: res.status })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
     return NextResponse.json({ error: 'Failed to reach backend', detail: message }, { status: 502 })

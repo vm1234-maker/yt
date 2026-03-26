@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getBackendOrigin } from '@/lib/backend-url'
+import { parseBackendProxyBody } from '@/lib/backend-proxy-body'
 
 export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
@@ -13,20 +14,9 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
   try {
     const res = await fetch(`${origin}/api/agent-status/${id}`)
     const text = await res.text()
-    let data: unknown = {}
-    try {
-      data = text ? JSON.parse(text) : {}
-    } catch {
-      return NextResponse.json(
-        {
-          error: 'Backend returned non-JSON',
-          backendStatus: res.status,
-          snippet: text.slice(0, 400),
-        },
-        { status: 502 }
-      )
-    }
-    return NextResponse.json(data, { status: res.status })
+    const parsedBody = parseBackendProxyBody(res, text)
+    if (!parsedBody.ok) return parsedBody.response
+    return NextResponse.json(parsedBody.data, { status: res.status })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
     return NextResponse.json({ error: 'Failed to reach backend', detail: message }, { status: 502 })
