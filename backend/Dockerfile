@@ -11,6 +11,8 @@ COPY . .
 
 RUN mkdir -p /sandbox/output
 
+# Railway (and others) set $PORT — must listen on it or the proxy returns 502 / deploy fails health checks
+ENV PORT=8000
 EXPOSE 8000
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

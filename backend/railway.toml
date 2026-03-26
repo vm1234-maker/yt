@@ -1,0 +1,10 @@
+# Railway: set this service’s **Root Directory** to `backend` (repo is Next.js + API monorepo).
+# https://docs.railway.com/guides/monorepo
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100
