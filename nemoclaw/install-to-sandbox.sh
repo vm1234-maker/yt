@@ -24,6 +24,7 @@ from pathlib import Path
 root = Path("$ROOT")
 text = (root / "backend" / ".env").read_text(encoding="utf-8")
 out = {}
+nemoclaw_next = None
 for line in text.splitlines():
     line = line.strip()
     if not line or line.startswith("#") or "=" not in line:
@@ -32,9 +33,11 @@ for line in text.splitlines():
     k, v = k.strip(), v.strip().strip('"').strip("'")
     if k in ("SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"):
         out[k] = v
+    if k == "NEMOCLAW_NEXT_APP_URL" and v:
+        nemoclaw_next = v.rstrip("/")
 if len(out) != 2:
     raise SystemExit("backend/.env must define SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY")
-out["NEXT_PUBLIC_APP_URL"] = "http://host.docker.internal:3000"
+out["NEXT_PUBLIC_APP_URL"] = nemoclaw_next or "http://host.docker.internal:3000"
 body = "".join(f"{k}={v}\n" for k, v in out.items())
 Path("$ENV_OUT").write_text(body, encoding="utf-8")
 print("→ Wrote", len(body), "bytes to", "$ENV_OUT")

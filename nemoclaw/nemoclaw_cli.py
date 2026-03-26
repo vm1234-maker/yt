@@ -11,7 +11,9 @@ Usage:
 Env file (default ~/.openclaw/workspace/.env.nemoclaw):
   SUPABASE_URL              — project URL (https://xxx.supabase.co)
   SUPABASE_SERVICE_ROLE_KEY — service role key
-  NEXT_PUBLIC_APP_URL       — http://host.docker.internal:3000 (from sandbox → Mac Next.js)
+  NEXT_PUBLIC_APP_URL       — http://host.docker.internal:3000 (local) or https://YOUR_APP.vercel.app
+                              (must be allowlisted in openclaw-sandbox.yaml; set NEMOCLAW_NEXT_APP_URL
+                              in backend/.env when running install-to-sandbox.sh for production)
   IMESSAGE_RECIPIENT        — optional; iMessage only works on macOS host, not Linux sandbox
 """
 from __future__ import annotations

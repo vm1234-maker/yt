@@ -163,3 +163,24 @@ network_policies:
       - { path: /usr/bin/python3 }
       - { path: /usr/bin/python3.11 }
       - { path: /usr/local/bin/python3 }
+
+  # Production Next.js on Vercel — replace `host` with your deployment hostname if different.
+  nextjs_vercel:
+    name: nextjs_vercel
+    endpoints:
+      - host: yt-pi-ochre.vercel.app
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET,  path: "/api/health" }
+          - allow: { method: POST, path: "/api/run-agent" }
+          - allow: { method: POST, path: "/api/run-pipeline" }
+          - allow: { method: GET,  path: "/api/agents" }
+          - allow: { method: GET,  path: "/api/agent-status/**" }
+          - allow: { method: POST, path: "/api/content/approve" }
+    binaries:
+      - { path: /usr/bin/python3 }
+      - { path: /usr/bin/python3.11 }
+      - { path: /usr/local/bin/python3 }

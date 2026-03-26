@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { NextResponse } from 'next/server'
+import { getBackendOrigin } from '@/lib/backend-url'
 
 const schema = z.object({
   agent: z.enum([
@@ -21,11 +22,36 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
-  const res = await fetch(`${process.env.BACKEND_URL}/api/run-agent`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(parsed.data),
-  })
-  const data = await res.json()
-  return NextResponse.json(data, { status: res.status })
+  const origin = getBackendOrigin()
+  if (!origin) {
+    return NextResponse.json(
+      { error: 'BACKEND_URL is not set on this deployment (Vercel → Settings → Environment Variables)' },
+      { status: 503 }
+    )
+  }
+  try {
+    const res = await fetch(`${origin}/api/run-agent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(parsed.data),
+    })
+    const text = await res.text()
+    let data: unknown = {}
+    try {
+      data = text ? JSON.parse(text) : {}
+    } catch {
+      return NextResponse.json(
+        {
+          error: 'Backend returned non-JSON',
+          backendStatus: res.status,
+          snippet: text.slice(0, 400),
+        },
+        { status: 502 }
+      )
+    }
+    return NextResponse.json(data, { status: res.status })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ error: 'Failed to reach backend', detail: message }, { status: 502 })
+  }
 }
