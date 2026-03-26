@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowser } from '@/lib/supabase'
 import type { ContentQueueItem } from '@/lib/types'
 import { ContentActions } from './content-actions'
 import { Video, Eye, Calendar, ImageIcon, Music, Sparkles } from 'lucide-react'
@@ -44,7 +44,9 @@ export function ContentQueueTable({ initialQueue }: Props) {
   const [queue, setQueue] = useState<ContentQueueItem[]>(initialQueue)
 
   useEffect(() => {
-    const channel = supabase
+    const sb = getSupabaseBrowser()
+    if (!sb) return
+    const channel = sb
       .channel('content_queue_live')
       .on(
         'postgres_changes',
@@ -64,7 +66,7 @@ export function ContentQueueTable({ initialQueue }: Props) {
         }
       )
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    return () => { sb.removeChannel(channel) }
   }, [])
 
   const awaiting = queue.filter(c => c.status === 'awaiting_approval')

@@ -1,18 +1,34 @@
 import AnalyticsCharts from '@/components/analytics-charts'
 import { TrendingUp, Eye, Clock, DollarSign, MousePointerClick, Users } from 'lucide-react'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { displaySubscriberCount } from '@/lib/channel-metrics'
 import type { VideoAnalytics, ChannelMetrics } from '@/lib/types'
 
 export default async function AnalyticsPage() {
+  const admin = getSupabaseAdmin()
+  if (!admin) {
+    return (
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          Channel Analytics
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          Set <code className="mono">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+          <code className="mono">SUPABASE_SERVICE_ROLE_KEY</code> in{' '}
+          <code className="mono">.env.local</code> or Vercel to load analytics.
+        </p>
+      </div>
+    )
+  }
+
   const [metricsRes, videosRes] = await Promise.all([
-    supabaseAdmin
+    admin
       .from('channel_metrics')
       .select('*')
       .order('recorded_at', { ascending: false })
       .limit(1)
-      .single(),
-    supabaseAdmin
+      .maybeSingle(),
+    admin
       .from('video_analytics')
       .select('*')
       .order('views', { ascending: false })

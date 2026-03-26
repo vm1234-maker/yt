@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import type { AgentRun } from '@/lib/types'
 import { LiveAgentCard } from '@/components/live-agent-card'
 import { SetupAgentButton } from '@/components/setup-agent-button'
@@ -43,7 +43,23 @@ function buildAgentStats(allRuns: AgentRun[], agentId: string) {
 }
 
 export default async function AgentsPage() {
-  const { data: allRuns } = await supabaseAdmin
+  const admin = getSupabaseAdmin()
+  if (!admin) {
+    return (
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          Agents
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          Set <code className="mono">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+          <code className="mono">SUPABASE_SERVICE_ROLE_KEY</code> in{' '}
+          <code className="mono">.env.local</code> or Vercel.
+        </p>
+      </div>
+    )
+  }
+
+  const { data: allRuns } = await admin
     .from('agent_runs')
     .select('*')
     .order('started_at', { ascending: false })

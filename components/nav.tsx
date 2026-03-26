@@ -12,7 +12,7 @@ import {
   Settings,
   Radio,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseBrowser } from "@/lib/supabase";
 import type { AgentRun } from "@/lib/types";
 
 const navItems = [
@@ -86,7 +86,9 @@ export default function Nav() {
       .catch(() => {/* keep idle defaults on error */});
 
     // Realtime updates
-    const channel = supabase
+    const sb = getSupabaseBrowser();
+    if (!sb) return;
+    const channel = sb
       .channel("nav_agent_dots")
       .on(
         "postgres_changes",
@@ -99,7 +101,7 @@ export default function Nav() {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { sb.removeChannel(channel); };
   }, []);
 
   return (

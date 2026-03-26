@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET() {
-  const { data: runs } = await supabaseAdmin
+  const admin = getSupabaseAdmin()
+  if (!admin) {
+    return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 })
+  }
+  const { data: runs } = await admin
     .from('agent_runs')
     .select('*')
     .order('started_at', { ascending: false })

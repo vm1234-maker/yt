@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { CheckCircle2, AlertCircle, Cpu } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowser } from '@/lib/supabase'
 import type { AgentRun } from '@/lib/types'
 
 interface ActivityFeedProps {
@@ -35,7 +35,9 @@ export function ActivityFeed({ initial }: ActivityFeedProps) {
   const [feed, setFeed] = useState<AgentRun[]>(initial)
 
   useEffect(() => {
-    const channel = supabase
+    const sb = getSupabaseBrowser()
+    if (!sb) return
+    const channel = sb
       .channel('activity_feed')
       .on(
         'postgres_changes',
@@ -47,7 +49,7 @@ export function ActivityFeed({ initial }: ActivityFeedProps) {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      sb.removeChannel(channel)
     }
   }, [])
 

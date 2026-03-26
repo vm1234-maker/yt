@@ -1,9 +1,25 @@
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import type { ContentQueueItem } from '@/lib/types'
 import { ContentQueueTable } from '@/components/content-queue-table'
 
 export default async function ContentPage() {
-  const { data } = await supabaseAdmin
+  const admin = getSupabaseAdmin()
+  if (!admin) {
+    return (
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          Content Queue
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          Set <code className="mono">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+          <code className="mono">SUPABASE_SERVICE_ROLE_KEY</code> in{' '}
+          <code className="mono">.env.local</code> or Vercel.
+        </p>
+      </div>
+    )
+  }
+
+  const { data } = await admin
     .from('content_queue')
     .select('*')
     .order('created_at', { ascending: false })

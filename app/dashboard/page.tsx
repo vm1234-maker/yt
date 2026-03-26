@@ -7,7 +7,7 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import Link from 'next/link'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { displaySubscriberCount } from '@/lib/channel-metrics'
 import type { AgentRun, ChannelMetrics } from '@/lib/types'
 import { ActivityFeed } from '@/components/activity-feed'
@@ -30,14 +30,30 @@ function AccentBar({ accent }: { accent: string }) {
 
 
 export default async function DashboardPage() {
+  const admin = getSupabaseAdmin()
+  if (!admin) {
+    return (
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          Dashboard
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          Set <code className="mono">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+          <code className="mono">SUPABASE_SERVICE_ROLE_KEY</code> in{' '}
+          <code className="mono">.env.local</code> or Vercel.
+        </p>
+      </div>
+    )
+  }
+
   const [metricsRes, runsRes] = await Promise.all([
-    supabaseAdmin
+    admin
       .from('channel_metrics')
       .select('*')
       .order('recorded_at', { ascending: false })
       .limit(1)
-      .single(),
-    supabaseAdmin
+      .maybeSingle(),
+    admin
       .from('agent_runs')
       .select('*')
       .order('started_at', { ascending: false })

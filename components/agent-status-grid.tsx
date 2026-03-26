@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowser } from '@/lib/supabase'
 import type { AgentRun } from '@/lib/types'
 import { Cpu, Clock } from 'lucide-react'
 
@@ -41,7 +41,9 @@ export function AgentStatusGrid({ initialRuns }: Props) {
   })
 
   useEffect(() => {
-    const channel = supabase
+    const sb = getSupabaseBrowser()
+    if (!sb) return
+    const channel = sb
       .channel('agent_status_grid')
       .on(
         'postgres_changes',
@@ -59,7 +61,7 @@ export function AgentStatusGrid({ initialRuns }: Props) {
         }
       )
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    return () => { sb.removeChannel(channel) }
   }, [])
 
   return (

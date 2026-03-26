@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowser } from '@/lib/supabase'
 import type { AgentRun } from '@/lib/types'
 import { RunAgentButton } from './run-agent-button'
 import { RunPipelineMiniButton } from './run-pipeline-mini-button'
@@ -89,7 +89,9 @@ export function LiveAgentCard({
 
   // Any insert/update for this agent_name → refetch (latest run + stats)
   useEffect(() => {
-    const channel = supabase
+    const sb = getSupabaseBrowser()
+    if (!sb) return
+    const channel = sb
       .channel(`agent_name_${agentId}`)
       .on(
         'postgres_changes',
@@ -105,7 +107,7 @@ export function LiveAgentCard({
       )
       .subscribe()
     return () => {
-      supabase.removeChannel(channel)
+      sb.removeChannel(channel)
     }
   }, [agentId, refresh])
 
