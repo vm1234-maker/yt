@@ -39,6 +39,10 @@ def load_env_file(path: str) -> None:
             k, v = k.strip(), v.strip().strip('"').strip("'")
             if k and k not in os.environ:
                 os.environ[k] = v
+    # backend/.env often sets NEMOCLAW_NEXT_APP_URL; CLI expects NEXT_PUBLIC_APP_URL
+    nemo = os.environ.get("NEMOCLAW_NEXT_APP_URL", "").strip()
+    if nemo and not os.environ.get("NEXT_PUBLIC_APP_URL"):
+        os.environ["NEXT_PUBLIC_APP_URL"] = nemo.rstrip("/")
 
 
 def _require_supabase_env() -> None:
@@ -209,7 +213,7 @@ def main() -> None:
     p_ta.add_argument(
         "--agent",
         required=True,
-        help="strategy | research | content | production | upload | analytics | brainstorm | setup",
+        help="strategy | research | content | production | upload | analytics | brainstorm | setup | nemoclaw (use --input for steps JSON)",
     )
     p_ta.add_argument("--input", help="JSON object", default=None)
 

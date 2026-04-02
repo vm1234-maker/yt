@@ -48,6 +48,14 @@ python3 ~/.openclaw/nemoclaw_cli.py read-analytics --type videos --limit 5
 # Trigger backend agent (Next proxies to FastAPI)
 python3 ~/.openclaw/nemoclaw_cli.py trigger-agent --agent analytics
 
+# Parent orchestrator — run several agents in order (one parent run_id, child rows in agent_runs)
+python3 ~/.openclaw/nemoclaw_cli.py trigger-agent --agent nemoclaw --input '{"steps":[{"agent":"research","input":{}},{"agent":"strategy","input":{}}]}'
+
+# One command from repo root (uses nemoclaw/orchestrator-default.json + backend/.env or ~/.openclaw/...):
+#   ./nemoclaw/run-orchestrator.sh
+#   npm run nemoclaw:orchestrate
+# Custom steps file: ./nemoclaw/run-orchestrator.sh path/to/steps.json
+
 # Strategy note for next Strategy run
 python3 ~/.openclaw/nemoclaw_cli.py update-strategy "Prioritize rain + lofi until Thursday"
 ```

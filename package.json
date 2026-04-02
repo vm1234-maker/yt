@@ -6,7 +6,8 @@
     "dev": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "nemoclaw:orchestrate": "bash nemoclaw/run-orchestrator.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.0",

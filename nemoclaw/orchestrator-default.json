@@ -1,0 +1,7 @@
+{
+  "steps": [
+    { "agent": "research", "input": {} },
+    { "agent": "strategy", "input": {} },
+    { "agent": "analytics", "input": {} }
+  ]
+}
