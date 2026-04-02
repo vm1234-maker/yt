@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Literal
+from pydantic import BaseModel, Field
+from typing import Any, Literal
 from supabase import create_client
 from config import settings
 from tasks import run_agent_task, run_pipeline_task
@@ -20,9 +20,13 @@ app.add_middleware(
 
 db = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
-AgentName = Literal["strategy", "research", "content", "production", "upload", "analytics", "brainstorm", "setup"]
+AgentName = Literal[
+    "strategy", "research", "content", "production", "upload", "analytics",
+    "brainstorm", "setup", "nemoclaw",
+]
 
 AGENT_META = {
+    "nemoclaw":    {"name": "NemoClaw Orchestrator", "role": "Parent agent — runs an ordered list of agents (input.steps)"},
     "pipeline":    {"name": "Full Pipeline",     "role": "End-to-end orchestrator"},
     "setup":       {"name": "Setup Agent",       "role": "Downloads all CC0 visual & audio loops"},
     "research":    {"name": "Research Agent",    "role": "YouTube Trend Analyst"},
@@ -37,7 +41,7 @@ AGENT_META = {
 
 class RunAgentRequest(BaseModel):
     agent: AgentName
-    input: dict = {}
+    input: dict[str, Any] = Field(default_factory=dict)
 
 
 @app.get("/health")

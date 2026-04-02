@@ -123,9 +123,15 @@ def cmd_trigger_agent(args: argparse.Namespace) -> dict[str, Any]:
         f"{app_url.rstrip('/')}/api/run-agent",
         json={"agent": args.agent, "input": inp},
         headers={"Content-Type": "application/json"},
-        timeout=60.0,
+        timeout=120.0,
     )
-    r.raise_for_status()
+    if r.status_code >= 400:
+        snippet = (r.text or "")[:2000]
+        try:
+            err_json = r.json()
+            raise RuntimeError(f"HTTP {r.status_code}: {err_json}")
+        except json.JSONDecodeError:
+            raise RuntimeError(f"HTTP {r.status_code}: {snippet}") from None
     return r.json()
 
 

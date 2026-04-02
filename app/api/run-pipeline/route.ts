@@ -4,7 +4,7 @@ import { getBackendOrigin } from '@/lib/backend-url'
 import { parseBackendProxyBody } from '@/lib/backend-proxy-body'
 
 const schema = z.object({
-  input: z.record(z.string(), z.unknown()).optional().default({}),
+  input: z.any().optional().default({}),
 })
 
 export async function POST(request: Request) {
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   const origin = getBackendOrigin()
   if (!origin) {
     return NextResponse.json(
-      { error: 'BACKEND_URL is not set on this deployment (Vercel → Settings → Environment Variables)' },
+      { error: 'BACKEND_URL is not set on this deployment (Vercel → Environment Variables)' },
       { status: 503 }
     )
   }

@@ -7,7 +7,7 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
   const origin = getBackendOrigin()
   if (!origin) {
     return NextResponse.json(
-      { error: 'BACKEND_URL is not set on this deployment (Vercel → Settings → Environment Variables)' },
+      { error: 'BACKEND_URL is not set on this deployment (Vercel → Environment Variables)' },
       { status: 503 }
     )
   }
