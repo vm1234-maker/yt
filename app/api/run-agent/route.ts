@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { getBackendOrigin } from '@/lib/backend-url'
 import { parseBackendProxyBody } from '@/lib/backend-proxy-body'
 
+export const runtime = 'nodejs'
+
 const schema = z.object({
   agent: z.enum([
     'strategy',
@@ -19,19 +21,27 @@ const schema = z.object({
 })
 
 export async function POST(request: Request) {
-  const body = await request.json()
-  const parsed = schema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
-  }
-  const origin = getBackendOrigin()
-  if (!origin) {
-    return NextResponse.json(
-      { error: 'BACKEND_URL is not set on this deployment (Vercel → Environment Variables)' },
-      { status: 503 }
-    )
-  }
   try {
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
+    }
+
+    const origin = getBackendOrigin()
+    if (!origin) {
+      return NextResponse.json(
+        { error: 'BACKEND_URL is not set on this deployment (Vercel → Environment Variables)' },
+        { status: 503 }
+      )
+    }
+
     const res = await fetch(`${origin}/api/run-agent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -43,6 +53,7 @@ export async function POST(request: Request) {
     return NextResponse.json(parsedBody.data, { status: res.status })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
-    return NextResponse.json({ error: 'Failed to reach backend', detail: message }, { status: 502 })
+    console.error('[api/run-agent]', e)
+    return NextResponse.json({ error: 'run-agent route failed', detail: message }, { status: 500 })
   }
 }

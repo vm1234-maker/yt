@@ -13,10 +13,19 @@ export function RunAgentButton({ agentId, onTriggered }: RunAgentButtonProps) {
   async function handleRun() {
     setLoading(true)
     try {
+      const payload =
+        agentId === 'nemoclaw'
+          ? {
+              agent: 'nemoclaw' as const,
+              input: {
+                steps: [{ agent: 'research' as const, input: {} }],
+              },
+            }
+          : { agent: agentId, input: {} }
       const res = await fetch('/api/run-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: agentId, input: {} }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (data.run_id) onTriggered?.(data.run_id)

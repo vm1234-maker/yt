@@ -6,6 +6,7 @@ import { SetupAgentButton } from '@/components/setup-agent-button'
 export const dynamic = 'force-dynamic'
 
 const AGENT_META: Record<string, { name: string; role: string; inputs: string[]; outputs: string[] }> = {
+  nemoclaw:   { name: 'NemoClaw Orchestrator', role: 'Parent — runs steps[] of strategy/research/content/… in order', inputs: ['steps: { agent, input }[]'], outputs: ['child agent_runs', 'combined summary'] },
   pipeline:   { name: 'Full Pipeline',    role: 'Research → Brainstorm → Content → [approval] → Production → Upload', inputs: ['optional_input'], outputs: ['content_queue', 'youtube_video_id'] },
   strategy:   { name: 'Strategy Agent',   role: 'Content Strategist & ROI Optimizer',    inputs: ['analytics_report', 'research_report'], outputs: ['content_plan', 'niche_priority'] },
   research:   { name: 'Research Agent',   role: 'YouTube Trend Analyst',                 inputs: ['niche_list', 'youtube_api'], outputs: ['niche_report', 'rpm_estimates'] },

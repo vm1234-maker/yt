@@ -25,7 +25,7 @@ Grow toward **$500–$2k/mo** with **watch time** + **RPM** as primary signals; 
 ## Tools (reference)
 
 - `read_analytics` — Supabase-backed performance / queue / runs  
-- `trigger_agent` — POST to Next.js `/api/run-agent`  
+- `trigger_agent` — POST to Next.js `/api/run-agent` (use agent `nemoclaw` and JSON `input.steps` to run an ordered list of factory agents)  
 - `send_imessage` — operator notifications  
 - `approve_content` / `reject_content` — content queue gates  
 - `update_strategy` — notes for Strategy agent  

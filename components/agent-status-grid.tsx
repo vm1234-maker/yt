@@ -10,6 +10,7 @@ interface Props {
 }
 
 const AGENT_META: Record<string, { name: string; role: string }> = {
+  nemoclaw:   { name: 'NemoClaw Orchestrator', role: 'Runs custom agent sequence (input.steps)' },
   pipeline:   { name: 'Full Pipeline',    role: 'End-to-end orchestrator' },
   strategy:   { name: 'Strategy Agent',   role: 'Content Strategist & ROI Optimizer' },
   research:   { name: 'Research Agent',   role: 'YouTube Trend Analyst' },

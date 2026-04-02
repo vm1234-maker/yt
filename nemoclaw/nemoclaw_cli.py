@@ -14,6 +14,8 @@ Env file (default ~/.openclaw/workspace/.env.nemoclaw):
   NEXT_PUBLIC_APP_URL       — http://host.docker.internal:3000 (local) or https://YOUR_APP.vercel.app
                               (must be allowlisted in openclaw-sandbox.yaml; set NEMOCLAW_NEXT_APP_URL
                               in backend/.env when running install-to-sandbox.sh for production)
+  NEMOCLAW_DIRECT_BACKEND_URL — optional; Railway base (https://xxx.up.railway.app) to POST /api/run-agent
+                              without going through Vercel (debugging HTTP 500 from proxy)
   IMESSAGE_RECIPIENT        — optional; iMessage only works on macOS host, not Linux sandbox
 """
 from __future__ import annotations
@@ -117,21 +119,41 @@ def cmd_read_analytics(args: argparse.Namespace) -> dict[str, Any]:
 def cmd_trigger_agent(args: argparse.Namespace) -> dict[str, Any]:
     import httpx
 
-    app_url = os.environ.get("NEXT_PUBLIC_APP_URL", "http://host.docker.internal:3000")
     inp = json.loads(args.input) if args.input else {}
+    # Optional: POST straight to FastAPI (Railway) and skip Vercel — set in backend/.env, e.g.
+    # NEMOCLAW_DIRECT_BACKEND_URL=https://xxx.up.railway.app/api/run-agent
+    direct = (os.environ.get("NEMOCLAW_DIRECT_BACKEND_URL") or "").strip()
+    if direct:
+        post_url = direct.rstrip("/")
+        if not post_url.endswith("/api/run-agent"):
+            post_url = f"{post_url}/api/run-agent"
+    else:
+        app_url = os.environ.get("NEXT_PUBLIC_APP_URL", "http://host.docker.internal:3000")
+        post_url = f"{app_url.rstrip('/')}/api/run-agent"
+
     r = httpx.post(
-        f"{app_url.rstrip('/')}/api/run-agent",
+        post_url,
         json={"agent": args.agent, "input": inp},
         headers={"Content-Type": "application/json"},
         timeout=120.0,
     )
     if r.status_code >= 400:
-        snippet = (r.text or "")[:2000]
+        raw = (r.text or "").strip()
+        if not raw:
+            ct = r.headers.get("content-type", "")
+            vid = r.headers.get("x-vercel-id", "")
+            hint = (
+                f"empty response body (status {r.status_code}). "
+                f"content-type={ct!r} x-vercel-id={vid!r}. "
+                "Check Vercel function logs for /api/run-agent, or set NEMOCLAW_DIRECT_BACKEND_URL "
+                "to https://YOUR_RAILWAY_HOST (base URL; /api/run-agent is appended) to call FastAPI directly."
+            )
+            raise RuntimeError(f"HTTP {r.status_code}: {hint} url={post_url!s}")
         try:
             err_json = r.json()
-            raise RuntimeError(f"HTTP {r.status_code}: {err_json}")
         except json.JSONDecodeError:
-            raise RuntimeError(f"HTTP {r.status_code}: {snippet}") from None
+            raise RuntimeError(f"HTTP {r.status_code}: {raw[:2000]}") from None
+        raise RuntimeError(f"HTTP {r.status_code}: {err_json}")
     return r.json()
 
 
