@@ -39,9 +39,11 @@ def load_env_file(path: str) -> None:
             k, v = k.strip(), v.strip().strip('"').strip("'")
             if k and k not in os.environ:
                 os.environ[k] = v
-    # backend/.env often sets NEMOCLAW_NEXT_APP_URL; CLI expects NEXT_PUBLIC_APP_URL
+    # backend/.env often sets BOTH NEXT_PUBLIC_APP_URL (Docker → Next) AND NEMOCLAW_NEXT_APP_URL
+    # (Vercel). For nemoclaw_cli on the Mac host, prefer Vercel — host.docker.internal is not
+    # resolvable from a normal shell (ConnectError: nodename nor servname not known).
     nemo = os.environ.get("NEMOCLAW_NEXT_APP_URL", "").strip()
-    if nemo and not os.environ.get("NEXT_PUBLIC_APP_URL"):
+    if nemo:
         os.environ["NEXT_PUBLIC_APP_URL"] = nemo.rstrip("/")
 
 
