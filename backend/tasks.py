@@ -45,6 +45,29 @@ def dispatch_agent(run_id: str, agent_name: str, input_data: dict) -> dict:
         raise ValueError(f"Unknown agent: {agent_name}")
 
 
+def execute_single_agent_run(run_id: str, agent_name: str, input_data: dict) -> dict:
+    """Run one agent synchronously: dispatch + update agent_runs (success or error)."""
+    start = time.time()
+    try:
+        result = dispatch_agent(run_id, agent_name, input_data)
+        db.table("agent_runs").update({
+            "status": "success",
+            "output_summary": result["summary"],
+            "full_output": result,
+            "finished_at": datetime.datetime.utcnow().isoformat(),
+            "duration_ms": int((time.time() - start) * 1000),
+        }).eq("id", run_id).execute()
+        return result
+    except Exception as exc:
+        db.table("agent_runs").update({
+            "status": "error",
+            "output_summary": str(exc)[:500],
+            "finished_at": datetime.datetime.utcnow().isoformat(),
+            "duration_ms": int((time.time() - start) * 1000),
+        }).eq("id", run_id).execute()
+        raise
+
+
 @celery_app.task(bind=True, name="run_scheduled_pipeline")
 def run_scheduled_pipeline(self):
     """Insert pipeline agent_runs row and enqueue full pipeline (optional weekly schedule)."""
@@ -104,23 +127,32 @@ def run_scheduled_agent(self, agent_name: str, input_data: dict | None = None):
 
 @celery_app.task(bind=True, name="run_agent_task")
 def run_agent_task(self, run_id: str, agent_name: str, input_data: dict):
-    start = time.time()
+    if agent_name == "nemoclaw":
+        start = time.time()
+        try:
+            from agents.nemoclaw_orchestrator import run_nemoclaw_orchestrator
+
+            result = run_nemoclaw_orchestrator(run_id, input_data)
+            db.table("agent_runs").update({
+                "status": "success",
+                "output_summary": result["summary"][:500],
+                "full_output": result,
+                "finished_at": datetime.datetime.utcnow().isoformat(),
+                "duration_ms": int((time.time() - start) * 1000),
+            }).eq("id", run_id).execute()
+        except Exception as exc:
+            db.table("agent_runs").update({
+                "status": "error",
+                "output_summary": str(exc)[:500],
+                "finished_at": datetime.datetime.utcnow().isoformat(),
+                "duration_ms": int((time.time() - start) * 1000),
+            }).eq("id", run_id).execute()
+            raise
+        return
+
     try:
-        result = dispatch_agent(run_id, agent_name, input_data)
-        db.table("agent_runs").update({
-            "status": "success",
-            "output_summary": result["summary"],
-            "full_output": result,
-            "finished_at": datetime.datetime.utcnow().isoformat(),
-            "duration_ms": int((time.time() - start) * 1000),
-        }).eq("id", run_id).execute()
-    except Exception as exc:
-        db.table("agent_runs").update({
-            "status": "error",
-            "output_summary": str(exc)[:500],
-            "finished_at": datetime.datetime.utcnow().isoformat(),
-            "duration_ms": int((time.time() - start) * 1000),
-        }).eq("id", run_id).execute()
+        execute_single_agent_run(run_id, agent_name, input_data)
+    except Exception:
         raise
 
 
@@ -163,18 +195,12 @@ def _subscriber_line(channel: dict) -> str:
 
 def _send_daily_digest_imessage(msg: str) -> None:
     """iMessage only (AppleScript). Requires Celery Beat to run on macOS — not inside Linux Docker."""
-    import os as _os
-    import sys
-
-    sys.path.insert(
-        0,
-        _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..', 'nemoclaw', 'tools'),
-    )
     if not settings.IMESSAGE_RECIPIENT:
         print("[nemoclaw_daily_summary] IMESSAGE_RECIPIENT not set — skipping send")
         return
     try:
-        from send_imessage import send_imessage
+        from tools.imessage_tool import send_imessage
+
         send_imessage(msg)
     except Exception as exc:
         print(f"[nemoclaw_daily_summary] iMessage failed: {exc}")
