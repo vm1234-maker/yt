@@ -41,6 +41,9 @@ def dispatch_agent(run_id: str, agent_name: str, input_data: dict) -> dict:
     elif agent_name == "setup":
         from agents.setup import run_setup_agent
         return run_setup_agent(run_id, input_data)
+    elif agent_name == "nemoclaw":
+        from agents.nemoclaw_orchestrator import run_nemoclaw_orchestrator
+        return run_nemoclaw_orchestrator(run_id, input_data)
     else:
         raise ValueError(f"Unknown agent: {agent_name}")
 
@@ -127,29 +130,6 @@ def run_scheduled_agent(self, agent_name: str, input_data: dict | None = None):
 
 @celery_app.task(bind=True, name="run_agent_task")
 def run_agent_task(self, run_id: str, agent_name: str, input_data: dict):
-    if agent_name == "nemoclaw":
-        start = time.time()
-        try:
-            from agents.nemoclaw_orchestrator import run_nemoclaw_orchestrator
-
-            result = run_nemoclaw_orchestrator(run_id, input_data)
-            db.table("agent_runs").update({
-                "status": "success",
-                "output_summary": result["summary"][:500],
-                "full_output": result,
-                "finished_at": datetime.datetime.utcnow().isoformat(),
-                "duration_ms": int((time.time() - start) * 1000),
-            }).eq("id", run_id).execute()
-        except Exception as exc:
-            db.table("agent_runs").update({
-                "status": "error",
-                "output_summary": str(exc)[:500],
-                "finished_at": datetime.datetime.utcnow().isoformat(),
-                "duration_ms": int((time.time() - start) * 1000),
-            }).eq("id", run_id).execute()
-            raise
-        return
-
     try:
         execute_single_agent_run(run_id, agent_name, input_data)
     except Exception:
