@@ -1,0 +1,15 @@
+# Keep Railway Docker context small (API image only)
+node_modules
+.next
+.git
+.gitignore
+.cursor
+**/.venv
+**/__pycache__
+*.py[cod]
+.env*
+!.env.example
+backend/celerybeat-schedule*
+plans
+nemoclaw
+*.md

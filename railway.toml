@@ -1,0 +1,9 @@
+# Monorepo: API lives in backend/ — this file forces Docker build from repo root.
+# (Otherwise Railway Nixpacks picks Node + Next from package.json at root.)
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.railway"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100

@@ -1,4 +1,6 @@
-# Railway: set this service’s **Root Directory** to `backend` (repo is Next.js + API monorepo).
+# If the service **Root Directory** is `backend`, this Dockerfile path applies.
+# If you deploy from the **repo root** (GitHub default), Railway uses root `railway.toml`
+# + `Dockerfile.railway` in the project root instead.
 # https://docs.railway.com/guides/monorepo
 
 [build]
