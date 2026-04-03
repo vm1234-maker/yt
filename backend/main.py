@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from typing import Any, Literal
 from supabase import create_client
 from config import settings
-from tasks import run_agent_task, run_pipeline_task
+from tasks import run_agent_exec, run_pipeline_task
 import uuid
 import datetime
 
@@ -59,7 +59,7 @@ def run_agent(body: RunAgentRequest):
         "input": body.input,
         "started_at": datetime.datetime.utcnow().isoformat(),
     }).execute()
-    run_agent_task.delay(run_id, body.agent, body.input)
+    run_agent_exec.delay(run_id, body.agent, body.input)
     return {"run_id": run_id, "status": "running"}
 
 

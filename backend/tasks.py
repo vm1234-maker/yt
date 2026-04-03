@@ -114,7 +114,7 @@ def run_pipeline_task(self, pipeline_run_id: str, input_data: dict):
 
 @celery_app.task(bind=True, name="run_scheduled_agent")
 def run_scheduled_agent(self, agent_name: str, input_data: dict | None = None):
-    """Create agent_runs row then enqueue run_agent_task (Beat must use this — not run_agent_task alone)."""
+    """Create agent_runs row then enqueue run_agent_exec (Beat must use this — not the bare exec task alone)."""
     import uuid as _uuid
 
     input_data = input_data or {}
@@ -126,11 +126,13 @@ def run_scheduled_agent(self, agent_name: str, input_data: dict | None = None):
         "input": input_data,
         "started_at": datetime.datetime.utcnow().isoformat(),
     }).execute()
-    run_agent_task.delay(run_id, agent_name, input_data)
+    run_agent_exec.delay(run_id, agent_name, input_data)
 
 
-@celery_app.task(bind=True, name="run_agent_task")
-def run_agent_task(self, run_id: str, agent_name: str, input_data: dict):
+# Renamed from run_agent_task so stale workers (old code / extra replicas) that still listen for
+# "run_agent_task" cannot steal jobs — only processes with this task name run agent work.
+@celery_app.task(bind=True, name="run_agent_exec")
+def run_agent_exec(self, run_id: str, agent_name: str, input_data: dict):
     try:
         execute_single_agent_run(run_id, agent_name, input_data)
     except Exception:
@@ -139,9 +141,8 @@ def run_agent_task(self, run_id: str, agent_name: str, input_data: dict):
 
 @worker_ready.connect
 def _log_worker_boot(sender=None, **kwargs) -> None:
-    """If you see Unknown agent: nemoclaw, an old worker is consuming the queue — kill local Celery or redeploy."""
     print(
-        "[yt_automation] worker_ready — dispatch includes nemoclaw orchestrator (redeploy 2026-04)",
+        "[yt_automation] worker_ready — run_agent_exec + nemoclaw dispatch (stale run_agent_task workers ignored)",
         flush=True,
     )
 
