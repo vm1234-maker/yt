@@ -127,6 +127,10 @@ export function LiveAgentCard({
   const status = run?.status ?? 'idle'
   const logs = run?.full_output?.log ?? []
   const progress = run?.full_output?.progress
+  const logFallback =
+    logs.length === 0 && run?.output_summary
+      ? run.output_summary
+      : null
 
   return (
     <div className="card flex flex-col">
@@ -277,8 +281,12 @@ export function LiveAgentCard({
           </span>
         </div>
         <div className="log-terminal" ref={logRef}>
-          {logs.length === 0 ? (
+          {logs.length === 0 && !logFallback ? (
             <span style={{ color: 'var(--text-muted)' }}>No runs yet — waiting for first agent run</span>
+          ) : logs.length === 0 && logFallback ? (
+            <div className={status === 'error' ? 'log-error' : ''} style={{ color: 'var(--text-secondary)' }}>
+              {logFallback}
+            </div>
           ) : (
             logs.map((line, i) => {
               const isWarn = line.includes('WARN')
