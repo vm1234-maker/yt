@@ -1,5 +1,6 @@
 from celery import Celery
 from celery.schedules import crontab
+from celery.signals import worker_ready
 from supabase import create_client
 from config import settings
 import datetime
@@ -134,6 +135,15 @@ def run_agent_task(self, run_id: str, agent_name: str, input_data: dict):
         execute_single_agent_run(run_id, agent_name, input_data)
     except Exception:
         raise
+
+
+@worker_ready.connect
+def _log_worker_boot(sender=None, **kwargs) -> None:
+    """If you see Unknown agent: nemoclaw, an old worker is consuming the queue — kill local Celery or redeploy."""
+    print(
+        "[yt_automation] worker_ready — dispatch includes nemoclaw orchestrator (redeploy 2026-04)",
+        flush=True,
+    )
 
 
 # Celery Beat schedule — use run_scheduled_agent so each run gets a fresh agent_runs row
